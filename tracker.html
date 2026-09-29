@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pangtesting Readings Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffff;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+            min-height: 400px; /* Keeps layout stable when changing pages */
+        }
+        .file-item {
+            background: #4d4d4d;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        .file-item.read {
+            background-color: #e8f5e9;
+            opacity: 0.8;
+        }
+        .file-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .file-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #b2bbc5;
+            text-decoration: none;
+            line-height: 1.4;
+        }
+        .file-name:hover {
+            text-decoration: underline;
+        }
+        .bookmark-icon {
+            color: #124ef3;
+            margin-right: 8px;
+            display: none;
+        }
+        .bookmarked .bookmark-icon {
+            display: inline;
+        }
+        .actions {
+            display: flex;
+            flex-shrink: 0;
+        }
+        .actions button {
+            border: none;
+            padding: 8px 12px;
+            margin-left: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        .actions button:hover {
+            opacity: 0.8;
+        }
+        .btn-read {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-bookmark {
+            background-color: #4800ff;
+            color: white;
+        }
+        
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .pagination button:hover:not(:disabled) {
+            background-color: #e0e0e0;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+    </style>
+</head>
+<body>
+
+    <h1> Readings Tracker</h1>
+    <ul class="file-list" id="fileList">
+        <!-- Files will be dynamically injected here -->
+    </ul>
+    
+    <!-- Pagination Controls Container -->
+    <div class="pagination" id="paginationControls"></div>
+
+    <script>
+        // 1. Complete Configuration Array
+        // This array now contains all 98 reading files from your repository.
+        const filesToTrack = [
+            { id: "file-0", title: "AES for CTF: Read the Ciphertext", path: "AES for CTF_ Read the Ciphertext _ picoCTF Solutions.html" },
+            { id: "file-1", title: "ARM Assembly for CTF: The ARMssembly Series", path: "ARM Assembly for CTF_ The ARMssembly Series _ picoCTF Solutions.html" },
+            { id: "file-2", title: "Android APK Reverse Engineering for CTF", path: "Android APK Reverse Engineering for CTF _ picoCTF Solutions.html" },
+            { id: "file-3", title: "Archive and Zip Password Cracking for CTF", path: "Archive and Zip Password Cracking for CTF _ picoCTF Solutions.html" },
+            { id: "file-4", title: "Audio Steganography for CTF Forensics", path: "Audio Steganography for CTF Forensics _ picoCTF Solutions.html" },
+            { id: "file-5", title: "Auth Bypass and IDOR for CTF", path: "Auth Bypass and IDOR for CTF _ picoCTF Solutions.html" },
+            { id: "file-6", title: "Base64, Hex, and Common CTF Encodings", path: "Base64, Hex, and Common CTF Encodings _ picoCTF Solutions.html" },
+            { id: "file-7", title: "Bash Scripting for CTF Automation", path: "Bash Scripting for CTF Automation _ picoCTF Solutions.html" },
+            { id: "file-8", title: "Beginner's Guide to Netcat for CTFs", path: "Beginner's Guide to Netcat for CTFs _ picoCTF Solutions.html" },
+            { id: "file-9", title: "Binary Patching and Crackmes for CTF", path: "Binary Patching and Crackmes for CTF _ picoCTF Solutions.html" },
+            { id: "file-10", title: "Buffer Overflow for CTF", path: "Buffer Overflow for CTF _ picoCTF Solutions.html" },
+            { id: "file-11", title: "Burp Suite for picoCTF", path: "Burp Suite for picoCTF _ picoCTF Solutions.html" },
+            { id: "file-12", title: "Bypassing ASLR and PIE in CTF Exploitation", path: "Bypassing ASLR and PIE in CTF Exploitation _ picoCTF Solutions.html" },
+            { id: "file-13", title: "CSRF for CTF: Forging Requests", path: "CSRF for CTF_ Forging Requests _ picoCTF Solutions.html" },
+            { id: "file-14", title: "CTF Disk Forensics", path: "CTF Disk Forensics _ picoCTF Solutions.html" },
+            { id: "file-15", title: "Classical Ciphers for CTF", path: "Classical Ciphers for CTF _ picoCTF Solutions.html" },
+            { id: "file-16", title: "Command Injection for CTF", path: "Command Injection for CTF _ picoCTF Solutions.html" },
+            { id: "file-17", title: "Cookie and JWT Attacks for CTF", path: "Cookie and JWT Attacks for CTF _ picoCTF Solutions.html" },
+            { id: "file-18", title: "Diffie-Hellman and Discrete Log for CTF", path: "Diffie-Hellman and Discrete Log for CTF _ picoCTF Solutions.html" },
+            { id: "file-19", title: "Document Forensics for CTF", path: "Document Forensics for CTF _ picoCTF Solutions.html" },
+            { id: "file-20", title: "Elliptic Curves for CTF", path: "Elliptic Curves for CTF _ picoCTF Solutions.html" },
+            { id: "file-21", title: "Esoteric Languages in CTF", path: "Esoteric Languages in CTF _ picoCTF Solutions.html" },
+            { id: "file-22", title: "File Carving and Magic Bytes for CTF", path: "File Carving and Magic Bytes for CTF _ picoCTF Solutions.html" },
+            { id: "file-23", title: "File Upload Exploitation", path: "File Upload Exploitation _ picoCTF Solutions.html" },
+            { id: "file-24", title: "Format String Vulnerabilities for CTF", path: "Format String Vulnerabilities for CTF _ picoCTF Solutions.html" },
+            { id: "file-25", title: "Frida and Binary Instrumentation for CTF", path: "Frida and Binary Instrumentation for CTF _ picoCTF Solutions.html" },
+            { id: "file-26", title: "Git Forensics for CTF", path: "Git Forensics for CTF _ picoCTF Solutions.html" },
+            { id: "file-27", title: "Go and Rust Binary Reversing for CTF", path: "Go and Rust Binary Reversing for CTF _ picoCTF Solutions.html" },
+            { id: "file-28", title: "GraphQL Exploitation for CTF", path: "GraphQL Exploitation for CTF _ picoCTF Solutions.html" },
+            { id: "file-29", title: "HTTP for CTF: Requests, Headers, DevTools", path: "HTTP for CTF_ Requests, Headers, DevTools _ picoCTF Solutions.html" },
+            { id: "file-30", title: "Hash Cracking for CTF: MD5, SHA-1, SHA-256", path: "Hash Cracking for CTF_ MD5, SHA-1, SHA-256 _ picoCTF Solutions.html" },
+            { id: "file-31", title: "Hash Length Extension Attacks for CTF", path: "Hash Length Extension Attacks for CTF _ picoCTF Solutions.html" },
+            { id: "file-32", title: "Heap Exploitation for CTF", path: "Heap Exploitation for CTF _ picoCTF Solutions.html" },
+            { id: "file-33", title: "How to Read and Analyze Hex Dumps", path: "How to Read and Analyze Hex Dumps _ picoCTF Solutions.html" },
+            { id: "file-34", title: "How to Start Playing CTFs", path: "How to Start Playing CTFs _ picoCTF Solutions.html" },
+            { id: "file-35", title: "How to Use Ghidra for CTF Reversing", path: "How to Use Ghidra for CTF Reversing _ picoCTF Solutions.html" },
+            { id: "file-36", title: "Image Metadata and EXIF Forensics for CTF", path: "Image Metadata and EXIF Forensics for CTF _ picoCTF Solutions.html" },
+            { id: "file-37", title: "Insecure Deserialization for CTF", path: "Insecure Deserialization for CTF _ picoCTF Solutions.html" },
+            { id: "file-38", title: "Insecure Randomness and PRNGs for CTF", path: "Insecure Randomness and PRNGs for CTF _ picoCTF Solutions.html" },
+            { id: "file-39", title: "Integer Overflow for CTF", path: "Integer Overflow for CTF _ picoCTF Solutions.html" },
+            { id: "file-40", title: "Introduction to Steganography Tools for CTF", path: "Introduction to Steganography Tools for CTF _ picoCTF Solutions.html" },
+            { id: "file-41", title: "Java Reverse Engineering for CTF", path: "Java Reverse Engineering for CTF _ picoCTF Solutions.html" },
+            { id: "file-42", title: "JavaScript Deobfuscation for CTF", path: "JavaScript Deobfuscation for CTF _ picoCTF Solutions.html" },
+            { id: "file-43", title: "LFI for CTF: From etc/passwd to RCE", path: "LFI for CTF_ From _etc_passwd to RCE _ picoCTF Solutions.html" },
+            { id: "file-44", title: "Linux Command Line Basics for CTF", path: "Linux Command Line Basics for CTF _ picoCTF Solutions.html" },
+            { id: "file-45", title: "Linux Privilege Escalation for CTF", path: "Linux Privilege Escalation for CTF _ picoCTF Solutions.html" },
+            { id: "file-46", title: "Modular Arithmetic for CTF Crypto", path: "Modular Arithmetic for CTF Crypto _ picoCTF Solutions.html" },
+            { id: "file-47", title: "Networking Tools for CTF Challenges", path: "Networking Tools for CTF Challenges _ picoCTF Solutions.html" },
+            { id: "file-48", title: "NoSQL Injection for CTF", path: "NoSQL Injection for CTF _ picoCTF Solutions.html" },
+            { id: "file-49", title: "OSINT for CTF: Public Data to Flag", path: "OSINT for CTF_ Public Data to Flag _ picoCTF Solutions.html" },
+            { id: "file-50", title: "PHP Type Juggling for CTF", path: "PHP Type Juggling for CTF _ picoCTF Solutions.html" },
+            { id: "file-51", title: "Padding Oracle and CBC Attacks for CTF", path: "Padding Oracle and CBC Attacks for CTF _ picoCTF Solutions.html" },
+            { id: "file-52", title: "Python Reversing for CTF", path: "Python Reversing for CTF _ picoCTF Solutions.html" },
+            { id: "file-53", title: "Python Sandbox Bypass for CTF (Pyjail)", path: "Python Sandbox Bypass for CTF (Pyjail) _ picoCTF Solutions.html" },
+            { id: "file-54", title: "Python for CTF: Scripting Techniques", path: "Python for CTF_ Scripting Techniques _ picoCTF Solutions.html" },
+            { id: "file-55", title: "ROP Beyond ret2libc: The Gadget Ladder", path: "ROP Beyond ret2libc_ The Gadget Ladder _ picoCTF Solutions.html" },
+            { id: "file-56", title: "Race Conditions and TOCTOU for CTF", path: "Race Conditions and TOCTOU for CTF _ picoCTF Solutions.html" },
+            { id: "file-57", title: "Recipe Chain: Decode Multi-Layer Encodings", path: "Recipe Chain_ Decode Multi-Layer Encodings _ picoCTF Solutions.html" },
+            { id: "file-58", title: "Reversing Custom Ciphers for CTF", path: "Reversing Custom Ciphers for CTF _ picoCTF Solutions.html" },
+            { id: "file-59", title: "Reversing Custom VMs for CTF", path: "Reversing Custom VMs for CTF _ picoCTF Solutions.html" },
+            { id: "file-60", title: "SQL Injection for CTF", path: "SQL Injection for CTF _ picoCTF Solutions.html" },
+            { id: "file-61", title: "SROP and ret2dlresolve for CTF", path: "SROP and ret2dlresolve for CTF _ picoCTF Solutions.html" },
+            { id: "file-62", title: "SSRF for CTF: localhost to Cloud Metadata", path: "SSRF for CTF_ localhost to Cloud Metadata _ picoCTF Solutions.html" },
+            { id: "file-63", title: "SSTI for CTF: Detection and Filter Bypass", path: "SSTI for CTF_ Detection and Filter Bypass _ picoCTF Solutions.html" },
+            { id: "file-64", title: "Setting Up a CTF Environment", path: "Setting Up a CTF Environment _ picoCTF Solutions.html" },
+            { id: "file-65", title: "Side-Channel Attacks for CTF", path: "Side-Channel Attacks for CTF _ picoCTF Solutions.html" },
+            { id: "file-66", title: "Smart Contract CTF: Four Real Bugs", path: "Smart Contract CTF_ Four Real Bugs _ picoCTF Solutions.html" },
+            { id: "file-67", title: "Stack Canary Bypass for CTF", path: "Stack Canary Bypass for CTF _ picoCTF Solutions.html" },
+            { id: "file-68", title: "Steganography Techniques for CTF Competitions", path: "Steganography Techniques for CTF Competitions _ picoCTF Solutions.html" },
+            { id: "file-69", title: "Stream Ciphers in CTFs: LFSR and Keystreams", path: "Stream Ciphers in CTFs_ LFSR and Keystreams _ picoCTF Solutions.html" },
+            { id: "file-70", title: "The Complete picoCTF Beginner's Guide", path: "The Complete picoCTF Beginner's Guide _ picoCTF Solutions.html" },
+            { id: "file-71", title: "The picoCTF Binary Exploitation Roadmap", path: "The picoCTF Binary Exploitation Roadmap _ picoCTF Solutions.html" },
+            { id: "file-72", title: "The picoCTF Cryptography Roadmap", path: "The picoCTF Cryptography Roadmap _ picoCTF Solutions.html" },
+            { id: "file-73", title: "The picoCTF General Skills Roadmap", path: "The picoCTF General Skills Roadmap _ picoCTF Solutions.html" },
+            { id: "file-74", title: "The picoCTF Reverse Engineering Roadmap", path: "The picoCTF Reverse Engineering Roadmap _ picoCTF Solutions.html" },
+            { id: "file-75", title: "The picoCTF Web Exploitation Roadmap", path: "The picoCTF Web Exploitation Roadmap _ picoCTF Solutions.html" },
+            { id: "file-76", title: "USB and HID PCAP Forensics for CTF", path: "USB and HID PCAP Forensics for CTF _ picoCTF Solutions.html" },
+            { id: "file-77", title: "Use-After-Free for CTF", path: "Use-After-Free for CTF _ picoCTF Solutions.html" },
+            { id: "file-78", title: "Using GDB for CTF Reverse Engineering", path: "Using GDB for CTF Reverse Engineering _ picoCTF Solutions.html" },
+            { id: "file-79", title: "Volatility 3 for CTF Memory Forensics", path: "Volatility 3 for CTF Memory Forensics _ picoCTF Solutions.html" },
+            { id: "file-80", title: "Web Recon for CTF", path: "Web Recon for CTF _ picoCTF Solutions.html" },
+            { id: "file-81", title: "WebAssembly Reversing for CTF", path: "WebAssembly Reversing for CTF _ picoCTF Solutions.html" },
+            { id: "file-82", title: "What Is picoCTF: History, Purpose, and Goals", path: "What Is picoCTF_ History, Purpose, and Goals _ picoCTF Solutions.html" },
+            { id: "file-83", title: "What picoCTF Web Challenges Teach You", path: "What picoCTF Web Challenges Teach You _ picoCTF Solutions.html" },
+            { id: "file-84", title: "Windows Forensics for CTF", path: "Windows Forensics for CTF _ picoCTF Solutions.html" },
+            { id: "file-85", title: "Wireshark and pcap Analysis for CTF Forensics", path: "Wireshark and pcap Analysis for CTF Forensics _ picoCTF Solutions.html" },
+            { id: "file-86", title: "Writing x86-64 Shellcode for CTF", path: "Writing x86-64 Shellcode for CTF _ picoCTF Solutions.html" },
+            { id: "file-87", title: "XOR for CTF: Breaking XOR Encryption", path: "XOR for CTF_ Breaking XOR Encryption _ picoCTF Solutions.html" },
+            { id: "file-88", title: "XSS for CTF: alert(1) to CSP Bypass", path: "XSS for CTF_ alert(1) to CSP Bypass _ picoCTF Solutions.html" },
+            { id: "file-89", title: "XXE for CTF: XML External Entity Attacks", path: "XXE for CTF_ XML External Entity Attacks _ picoCTF Solutions.html" },
+            { id: "file-90", title: "angr from First Principles: picoCTF Guide", path: "angr from First Principles_ picoCTF Guide _ picoCTF Solutions.html" },
+            { id: "file-91", title: "picoCTF 2026 Guide", path: "picoCTF 2026 Guide _ picoCTF Solutions.html" },
+            { id: "file-92", title: "pwntools for CTF: A Foundational Guide", path: "pwntools for CTF_ A Foundational Guide _ picoCTF Solutions.html" },
+            { id: "file-93", title: "radare2 and rizin for CTF", path: "radare2 and rizin for CTF _ picoCTF Solutions.html" },
+            { id: "file-94", title: "ret2libc for CTF: Leaking libc", path: "ret2libc for CTF_ Leaking libc _ picoCTF Solutions.html" },
+            { id: "file-95", title: "sqlmap for CTF", path: "sqlmap for CTF _ picoCTF Solutions.html" },
+            { id: "file-96", title: "x86-64 Assembly for CTF", path: "x86-64 Assembly for CTF _ picoCTF Solutions.html" },
+            { id: "file-97", title: "z3 for CTF: Constraint Solving", path: "z3 for CTF_ Constraint Solving _ picoCTF Solutions.html" }
+        ];
+
+        // Pagination State
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        // 2. Initialize or load existing progress from localStorage
+        let progressData = JSON.parse(localStorage.getItem('pangtestingProgress')) || {};
+
+        // 3. Save progress back to localStorage
+        function saveProgress() {
+            localStorage.setItem('pangtestingProgress', JSON.stringify(progressData));
+        }
+
+        // 4. Toggle Read/Unread status
+        function toggleRead(id) {
+            if (!progressData[id]) progressData[id] = { read: false, bookmarked: false };
+            progressData[id].read = !progressData[id].read;
+            saveProgress();
+            renderList();
+        }
+
+        // 5. Toggle Bookmark status
+        function toggleBookmark(id) {
+            if (!progressData[id]) progressData[id] = { read: false, bookmarked: false };
+            progressData[id].bookmarked = !progressData[id].bookmarked;
+            saveProgress();
+            renderList();
+        }
+
+        // 6. Handle Page Changes
+        function changePage(page) {
+            currentPage = page;
+            renderList();
+        }
+
+        // 7. Render the user interface for the list
+        function renderList() {
+            const listContainer = document.getElementById('fileList');
+            listContainer.innerHTML = ''; // Clear existing list
+
+            // Calculate pagination slices
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentFiles = filesToTrack.slice(startIndex, endIndex);
+
+            currentFiles.forEach(file => {
+                const fileData = progressData[file.id] || { read: false, bookmarked: false };
+                
+                const li = document.createElement('li');
+                li.className = `file-item ${fileData.read ? 'read' : ''} ${fileData.bookmarked ? 'bookmarked' : ''}`;
+                
+                li.innerHTML = `
+                    <div class="file-info">
+                        <a href="${file.path}" class="file-name" target="_blank">
+                            <span class="bookmark-icon">★</span>${file.title}
+                        </a>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-bookmark" onclick="toggleBookmark('${file.id}')">
+                            ${fileData.bookmarked ? 'Remove Bookmark' : 'Bookmark'}
+                        </button>
+                        <button class="btn-read" onclick="toggleRead('${file.id}')">
+                            ${fileData.read ? 'Mark as Unread' : 'Mark as Read'}
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(li);
+            });
+
+            renderPagination();
+        }
+
+        // 8. Render the pagination controls
+        function renderPagination() {
+            const paginationContainer = document.getElementById('paginationControls');
+            paginationContainer.innerHTML = '';
+            
+            const totalPages = Math.ceil(filesToTrack.length / itemsPerPage);
+            
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.innerText = 'Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => changePage(currentPage - 1);
+            paginationContainer.appendChild(prevBtn);
+
+            // Page Numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.innerText = i;
+                if (i === currentPage) pageBtn.className = 'active';
+                pageBtn.onclick = () => changePage(i);
+                paginationContainer.appendChild(pageBtn);
+            }
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.innerText = 'Next';
+            nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+            nextBtn.onclick = () => changePage(currentPage + 1);
+            paginationContainer.appendChild(nextBtn);
+        }
+
+        // Initial render when the page loads
+        renderList();
+    </script>
+</body>
+</html>
